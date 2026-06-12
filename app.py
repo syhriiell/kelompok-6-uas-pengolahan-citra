@@ -64,6 +64,50 @@ source_type = st.sidebar.radio(
 filter_method = st.sidebar.selectbox(
     "Pilih metode denoising",
     list(FILTER_DESCRIPTIONS.keys())
+
+)
+st.sidebar.header("Parameter Kualitas")
+
+quality = st.sidebar.select_slider(
+    "Preset Kualitas",
+    options=[
+        "Low",
+        "Medium",
+        "High",
+        "Ultra"
+    ],
+    value="High"
+)
+
+if quality == "Low":
+    filter_strength = 5
+elif quality == "Medium":
+    filter_strength = 10
+elif quality == "High":
+    filter_strength = 15
+else:
+    filter_strength = 20
+
+kernel_size = st.sidebar.slider(
+    "Kernel Size",
+    min_value=3,
+    max_value=15,
+    step=2,
+    value=5
+)
+
+brightness = st.sidebar.slider(
+    "Brightness",
+    -100,
+    100,
+    0
+)
+
+contrast = st.sidebar.slider(
+    "Contrast",
+    0.5,
+    3.0,
+    1.0
 )
 
 st.sidebar.info(FILTER_DESCRIPTIONS[filter_method])
@@ -94,7 +138,17 @@ else:
         st.warning("Folder images belum memiliki sample gambar.")
 
 if image is not None:
-    processed = apply_filter(image, filter_method)
+    processed = apply_filter(
+    image,
+    filter_method,
+    filter_strength,
+    kernel_size
+)
+    processed = cv2.convertScaleAbs(
+    processed,
+    alpha=contrast,
+    beta=brightness
+)
 
     tab1, tab2, tab3 = st.tabs(
         ["🖼️ Hasil Gambar", "📊 Histogram", "📈 Analisis Kualitas"]
@@ -136,18 +190,28 @@ if image is not None:
         psnr = calculate_psnr(image, processed)
 
         col5, col6, col7 = st.columns(3)
+        col5.metric(
+        "Metode Filter",
+        filter_method
+)
 
-        col5.metric("Metode Filter", filter_method)
-        col6.metric("MSE", f"{mse:.2f}")
-        col7.metric("PSNR", f"{psnr:.2f} dB")
+        col6.metric(
+        "Preset",
+        quality
+)
+
+        col7.metric(
+        "PSNR",
+        f"{psnr:.2f} dB"
+)
 
         st.markdown(
             """
             **Keterangan singkat:**
 
-            - **MSE** menunjukkan rata-rata selisih pixel antara gambar asli dan hasil proses.
-            - **PSNR** digunakan sebagai indikator kualitas hasil pengolahan citra.
-            - Nilai PSNR yang lebih tinggi umumnya menunjukkan kualitas citra yang lebih baik.
+            - MSE menunjukkan rata-rata selisih pixel antara gambar asli dan hasil proses.
+            - PSNR digunakan sebagai indikator kualitas hasil pengolahan citra.
+            - Semakin tinggi nilai PSNR maka kualitas gambar semakin baik.
             """
         )
 
